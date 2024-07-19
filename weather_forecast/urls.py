@@ -20,5 +20,7 @@ from weather_forecast import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',views.index),
+    path('',views.index, name = 'index'),
+    path('cities/', views.get_cities, name='get_cities'),
+
 ]

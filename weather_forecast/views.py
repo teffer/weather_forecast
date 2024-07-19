@@ -5,7 +5,10 @@ import requests_cache
 import pandas as pd
 from retry_requests import retry
 from geopy.geocoders import Nominatim
-
+from googletrans import Translator
+from django.http import JsonResponse
+from django.conf import settings
+import os, json
 API_URL = "https://api.open-meteo.com/v1/forecast"
 
 WMO_LIST = {
@@ -50,7 +53,7 @@ def index(request):
 def get_weather(city):
     # Вычисление широты и долготы города
     geo = Nominatim(user_agent='studyagentLemberg')
-    code = geo.geocode('Berlin')
+    code = geo.geocode(city)
     latitude = code.latitude
     longitude = code.longitude
     cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
@@ -59,13 +62,12 @@ def get_weather(city):
 
     # Make sure all required weather variables are listed here
     # The order of variables in hourly or daily is important to assign them correctly below
-    url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": latitude,
         "longitude": longitude,
         "hourly": "temperature_2m,weather_code"
     }
-    responses = openmeteo.weather_api(url, params=params)
+    responses = openmeteo.weather_api(API_URL, params=params)
 
     # Process first location. Add a for-loop for multiple locations or weather models
     response = responses[0]
@@ -92,7 +94,6 @@ def get_weather(city):
     hourly_dataframe['day'] = hourly_dataframe['date'].dt.date
     day_data = hourly_dataframe[hourly_dataframe['hour'] == 12].set_index('day')
     night_data = hourly_dataframe[hourly_dataframe['hour'] == 0].set_index('day')
-    print(day_data)
     day_data['weather_description'] = day_data['code'].apply(decode_wmo_code)
     night_data['weather_description'] = night_data['code'].apply(decode_wmo_code)
     weather_data = {
@@ -109,6 +110,11 @@ def get_weather(city):
         ]
     }
     return weather_data
+
+def get_cities(request):
+    with open("weather_forecast/cities.json", "r", encoding="utf-8") as file:
+        cities = json.load(file)
+    return JsonResponse(cities)
 
 def decode_wmo_code(code):
     return WMO_LIST.get(code, "неизвестный код")
