@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1 class="my-4">Прогноз погоды</h1>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="city">Введите город:</label>
+                <input type="text" class="form-control" id="city" name="city" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Прогноз</button>
+        </form>
+        {% if weather %}
+            <h2 class="my-4">Город {{ weather.city }}</h2>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>День</th>
+                        <th>Температура днём</th>
+                        <th>Температура ночью</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in weather.data %}
+                        <tr>
+                            <td>{{ row.date }}</td>
+                            <td>{{ row.temperature_day }}</td>
+                            <td>{{ row.temperature_night }}</td>
+                        </tr>
+                    {% endfor %}
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>
