@@ -21,9 +21,11 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>День</th>
+                        <th>Дата</th>
                         <th>Температура днём</th>
-                        <th>Температура ночью</th>
+                        <th>Погода днем</th>
+                        <th>Ночная температура (°C)</th>
+                        <th>Погода ночью</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -31,7 +33,9 @@
                         <tr>
                             <td>{{ row.date }}</td>
                             <td>{{ row.temperature_day }}</td>
+                            <td>{{ row.weather_day }}</td>
                             <td>{{ row.temperature_night }}</td>
+                            <td>{{ row.weather_night }}</td>
                         </tr>
                     {% endfor %}
             </table>

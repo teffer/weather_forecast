@@ -8,6 +8,37 @@ from geopy.geocoders import Nominatim
 
 API_URL = "https://api.open-meteo.com/v1/forecast"
 
+WMO_LIST = {
+    0: "Ясное небо",
+    1: "Преимущественно ясно",
+    2: "Частично облачно",
+    3: "Пасмурно",
+    45: "Туман",
+    48: "Изморозь",
+    51: "Легкий моросящий дождь",
+    53: "Умеренный моросящий дождь",
+    55: "Сильный моросящий дождь",
+    56: "Легкий моросящий дождь",
+    57: "Сильный моросящий дождь",
+    61: "Слабый дождь",
+    63: "Умеренный дождь",
+    65: "Сильный дождь",
+    66: "Слабый дождь с градом",
+    67: "Сильный дождь с градом",
+    71: "Слабый снег",
+    73: "Умеренный снег",
+    75: "Снегопад",
+    77: "Снегопад",
+    80: "Слабый ливень",
+    81: "Умеренный ливень",
+    82: "Сильный ливень",
+    85: "Снегопад",
+    86: "Снегопад",
+    95: "Гроза",
+    96: "Гроза с градом",
+    99: "Гроза с градом"
+}
+
 def index(request):
     weather_data = None
     if request.method == "POST":
@@ -32,7 +63,7 @@ def get_weather(city):
     params = {
         "latitude": latitude,
         "longitude": longitude,
-        "hourly": "temperature_2m,wind_speed_10m"
+        "hourly": "temperature_2m,weather_code"
     }
     responses = openmeteo.weather_api(url, params=params)
 
@@ -46,6 +77,7 @@ def get_weather(city):
     # Process hourly data. The order of variables needs to be the same as requested.
     hourly = response.Hourly()
     hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
+    hourly_wmo_code = hourly.Variables(1).ValuesAsNumpy()
 
     hourly_data = {"date": pd.date_range(
         start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
@@ -54,21 +86,29 @@ def get_weather(city):
         inclusive = "left"
     )}
     hourly_data["temperature_2m"] = hourly_temperature_2m
+    hourly_data["code"] = hourly_wmo_code
     hourly_dataframe = pd.DataFrame(data = hourly_data)
     hourly_dataframe['hour'] = hourly_dataframe['date'].dt.hour
     hourly_dataframe['day'] = hourly_dataframe['date'].dt.date
-    day_temperature = hourly_dataframe[hourly_dataframe['hour'] == 12].set_index('day')['temperature_2m']
-    night_temperature = hourly_dataframe[hourly_dataframe['hour'] == 0].set_index('day')['temperature_2m']
-
+    day_data = hourly_dataframe[hourly_dataframe['hour'] == 12].set_index('day')
+    night_data = hourly_dataframe[hourly_dataframe['hour'] == 0].set_index('day')
+    print(day_data)
+    day_data['weather_description'] = day_data['code'].apply(decode_wmo_code)
+    night_data['weather_description'] = night_data['code'].apply(decode_wmo_code)
     weather_data = {
         "city": city,
         "data": [
             {
                 "date": day.strftime('%d %B').capitalize(),
-                "temperature_day": round(day_temperature[day]),
-                "temperature_night": round(night_temperature[day])
+                "temperature_day": round(day_data.loc[day, 'temperature_2m']),
+                "temperature_night": round(night_data.loc[day, 'temperature_2m']),
+                "weather_day": day_data.loc[day, 'weather_description'],
+                "weather_night": night_data.loc[day, 'weather_description']
             }
-            for day in day_temperature.index
+            for day in day_data.index
         ]
     }
     return weather_data
+
+def decode_wmo_code(code):
+    return WMO_LIST.get(code, "неизвестный код")
