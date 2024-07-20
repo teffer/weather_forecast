@@ -1,14 +1,17 @@
-from django.shortcuts import render
 import requests
 import openmeteo_requests
 import requests_cache
+import os, json
 import pandas as pd
+from django.shortcuts import render
 from retry_requests import retry
 from geopy.geocoders import Nominatim
 from googletrans import Translator
 from django.http import JsonResponse
 from django.conf import settings
-import os, json
+from urllib.parse import quote, unquote
+from .models import CitySearchCount
+
 API_URL = "https://api.open-meteo.com/v1/forecast"
 
 WMO_LIST = {
@@ -44,14 +47,25 @@ WMO_LIST = {
 
 def index(request):
     weather_data = None
+    last_city = unquote(request.COOKIES.get('last_city', ''))
     if request.method == "POST":
         city = request.POST.get("city")
         if city:
             weather_data = get_weather(city)
+            city_search, created = CitySearchCount.objects.get_or_create(city=city)
+            city_search.search_count += 1
+            city_search.save()
+            response = render(request, 'index.html', {'weather': weather_data})
+            response.set_cookie('last_city', quote(city))   
+            return response
+    elif last_city:
+        weather_data = get_weather(last_city)
+        city_search, created = CitySearchCount.objects.get_or_create(city=last_city)
+        city_search.search_count += 1
+        city_search.save()       
     return render(request, 'index.html', {'weather': weather_data})
 
 def get_weather(city):
-    # Вычисление широты и долготы города
     geo = Nominatim(user_agent='studyagentLemberg')
     code = geo.geocode(city)
     latitude = code.latitude
@@ -59,9 +73,6 @@ def get_weather(city):
     cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
     openmeteo = openmeteo_requests.Client(session = retry_session)
-
-    # Make sure all required weather variables are listed here
-    # The order of variables in hourly or daily is important to assign them correctly below
     params = {
         "latitude": latitude,
         "longitude": longitude,
@@ -69,14 +80,7 @@ def get_weather(city):
     }
     responses = openmeteo.weather_api(API_URL, params=params)
 
-    # Process first location. Add a for-loop for multiple locations or weather models
     response = responses[0]
-    print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
-    print(f"Elevation {response.Elevation()} m asl")
-    print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
-    print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
-
-    # Process hourly data. The order of variables needs to be the same as requested.
     hourly = response.Hourly()
     hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
     hourly_wmo_code = hourly.Variables(1).ValuesAsNumpy()
@@ -110,6 +114,18 @@ def get_weather(city):
         ]
     }
     return weather_data
+
+def get_search_counts(request, city = ''):
+    if city == '':
+        city_searches = CitySearchCount.objects.all().values('city', 'search_count')
+        data = list(city_searches)
+    else:
+        try:
+            city_search = CitySearchCount.objects.get(city=city)
+            data = {'city': city_search.city, 'search_count': city_search.search_count}
+        except CitySearchCount.DoesNotExist:
+            data = {'city': city, 'search_count': 0}
+    return JsonResponse(data, safe=False)
 
 def get_cities(request):
     with open("weather_forecast/cities.json", "r", encoding="utf-8") as file:

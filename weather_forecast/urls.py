@@ -22,5 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',views.index, name = 'index'),
     path('cities/', views.get_cities, name='get_cities'),
+    path('api/get_search_counts/', views.get_search_counts, name='get_search_counts'),
+    path('api/search_counts/<str:city>/', views.get_search_counts, name='get_search_count'),
 
 ]

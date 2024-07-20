@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-racuv5-86o$*%1^&-tkan+e6u##r*78842v&5zr*3!sxx90q92
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+DEFAULT_CHARSET = 'utf-8'
 
 # Application definition
 

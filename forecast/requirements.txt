@@ -1,0 +1,9 @@
+Django==4.1
+requests
+requests_cache
+pandas
+geopy
+googletrans
+retry_requests
+openmeteo_requests
+psycopg2-binary
