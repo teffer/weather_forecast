@@ -61,7 +61,7 @@ def index(request):
                 response.set_cookie('last_city', quote(city))   
                 return response
             else: 
-                return render(request, 'error.html')
+                return render(request, 'index.html', {'error': city})
     elif last_city:
         weather_data = get_weather(last_city)
         city_search, created = CitySearchCount.objects.get_or_create(city=last_city)
@@ -86,7 +86,8 @@ def get_weather(city):
         "hourly": "temperature_2m,weather_code"
     }
     responses = openmeteo.weather_api(API_URL, params=params)
-
+    if responses is not None:
+        return None
     response = responses[0]
     hourly = response.Hourly()
     hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
