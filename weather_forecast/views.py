@@ -16,9 +16,9 @@ from django.views.decorators.csrf import csrf_exempt
 API_URL = "https://api.open-meteo.com/v1/forecast"
 
 WMO_LIST = {
-    0: "Ясное небо",
+    0: "Ясно",
     1: "Преимущественно ясно",
-    2: "Частично облачно",
+    2: "Переменная облачность",
     3: "Пасмурно",
     45: "Туман",
     48: "Изморозь",
@@ -53,12 +53,15 @@ def index(request):
         city = request.POST.get("city")
         if city:
             weather_data = get_weather(city)
-            city_search, created = CitySearchCount.objects.get_or_create(city=city)
-            city_search.search_count += 1
-            city_search.save()
-            response = render(request, 'index.html', {'weather': weather_data})
-            response.set_cookie('last_city', quote(city))   
-            return response
+            if weather_data is not None:
+                city_search, created = CitySearchCount.objects.get_or_create(city=city)
+                city_search.search_count += 1
+                city_search.save()
+                response = render(request, 'index.html', {'weather': weather_data})
+                response.set_cookie('last_city', quote(city))   
+                return response
+            else: 
+                return render(request, 'error.html')
     elif last_city:
         weather_data = get_weather(last_city)
         city_search, created = CitySearchCount.objects.get_or_create(city=last_city)
@@ -69,8 +72,11 @@ def index(request):
 def get_weather(city):
     geo = Nominatim(user_agent='studyagentLemberg')
     code = geo.geocode(city)
-    latitude = code.latitude
-    longitude = code.longitude
+    if code is not None and code.latitude is not None and code.longitude is not None:
+        latitude = code.latitude
+        longitude = code.longitude
+    else:
+        return None
     cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
     openmeteo = openmeteo_requests.Client(session = retry_session)
