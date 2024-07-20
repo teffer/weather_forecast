@@ -1,14 +1,11 @@
-import requests
 import openmeteo_requests
 import requests_cache
-import os, json
+import json
 import pandas as pd
 from django.shortcuts import render
 from retry_requests import retry
 from geopy.geocoders import Nominatim
-from googletrans import Translator
 from django.http import JsonResponse
-from django.conf import settings
 from urllib.parse import quote, unquote
 from .models import CitySearchCount
 from django.views.decorators.csrf import csrf_exempt
