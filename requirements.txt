@@ -6,4 +6,3 @@ geopy
 googletrans
 retry_requests
 openmeteo_requests
-psycopg2-binary

@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.conf import settings
 from urllib.parse import quote, unquote
 from .models import CitySearchCount
+from django.views.decorators.csrf import csrf_exempt
 
 API_URL = "https://api.open-meteo.com/v1/forecast"
 
@@ -44,7 +45,7 @@ WMO_LIST = {
     96: "Гроза с градом",
     99: "Гроза с градом"
 }
-
+@csrf_exempt
 def index(request):
     weather_data = None
     last_city = unquote(request.COOKIES.get('last_city', ''))

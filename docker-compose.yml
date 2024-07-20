@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   web:
     build: .
@@ -9,7 +10,3 @@ services:
       - "8000:8000"
     environment:
       - DEBUG=1
-    depends_on:
-      - db
-volumes:
-  db_data:
