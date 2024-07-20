@@ -86,7 +86,7 @@ def get_weather(city):
         "hourly": "temperature_2m,weather_code"
     }
     responses = openmeteo.weather_api(API_URL, params=params)
-    if responses is not None:
+    if responses is None:
         return None
     response = responses[0]
     hourly = response.Hourly()

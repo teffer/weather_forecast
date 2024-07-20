@@ -17,7 +17,12 @@ class WeatherAppTests(TestCase):
         response = self.client.post(self.index_url, {'city': self.invalid_city_name})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '123йувфв')
-
+        
+    def test_index_view_with_valid_city(self):
+        response = self.client.post(self.index_url, {'city': self.city_name})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Лондон')
+        
     def test_get_search_counts_for_existing_city(self):
         CitySearchCount.objects.create(city=self.city_name, search_count=5)
         response = self.client.get(f"{self.search_counts_url}?city={self.city_name}")
